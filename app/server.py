@@ -20,15 +20,6 @@ from .validation import errors as v_errors, warnings as v_warnings
 from . import datev_export
 
 
-def _filter_rows(rows, q, fields):
-    """Einfache Volltextsuche über die genannten Felder (case-insensitive)."""
-    ql = (q or "").strip().lower()
-    if not ql:
-        return rows
-    return [r for r in rows
-            if ql in " ".join(str(r.get(f) or "") for f in fields).lower()]
-
-
 def _load_secret_key() -> str:
     """Zufälligen Session-Schlüssel im geschützten Datenordner ablegen/lesen –
     statt eines fest eingebauten Werts (gleicht sonst auf jeder Installation)."""
@@ -106,10 +97,10 @@ def create_app() -> Flask:
     def invoices():
         conn = get_conn()
         status = request.args.get("status") or None
-        q = request.args.get("q", "")
-        rows = _filter_rows(S.list_invoices(conn, status), q,
-                            ["invoice_number", "buyer_name", "title"])
-        return render_template("invoices.html", invoices=rows, status=status, q=q)
+        # Textsuche läuft live im Browser (siehe base.html); der Server liefert alle
+        # Zeilen des gewählten Status, q dient nur zum Vorbelegen des Suchfelds.
+        return render_template("invoices.html", invoices=S.list_invoices(conn, status),
+                               status=status, q=request.args.get("q", ""))
 
     @app.route("/rechnungen/neu", methods=["POST"])
     def invoice_new():
@@ -248,16 +239,6 @@ def create_app() -> Flask:
             flash(str(e), "error")
         return redirect(url_for("invoice_edit", iid=iid))
 
-    @app.route("/rechnungen/<int:iid>/erechnung-pruefen")
-    def invoice_einvoice_check(iid):
-        conn = get_conn()
-        inv = S.get_invoice(conn, iid)
-        if not inv or not inv.get("xml_file"):
-            abort(404)
-        from . import einvoice_rules
-        result = einvoice_rules.check(S.build_context(conn, inv))
-        return render_template("einvoice_check.html", inv=inv, result=result)
-
     @app.route("/rechnungen/<int:iid>/loeschen", methods=["POST"])
     def invoice_delete(iid):
         conn = get_conn()
@@ -372,11 +353,8 @@ def create_app() -> Flask:
     # ===================== Kunden =====================
     @app.route("/kunden")
     def customers():
-        q = request.args.get("q", "")
-        rows = _filter_rows(S.list_customers(get_conn()), q,
-                            ["company_name", "contact_name", "first_name", "last_name",
-                             "city", "zip", "customer_number", "email"])
-        return render_template("customers.html", customers=rows, q=q)
+        return render_template("customers.html", customers=S.list_customers(get_conn()),
+                               q=request.args.get("q", ""))
 
     @app.route("/kunden/neu", methods=["GET", "POST"])
     @app.route("/kunden/<int:cid>", methods=["GET", "POST"])
@@ -400,10 +378,8 @@ def create_app() -> Flask:
     # ===================== Katalog =====================
     @app.route("/katalog")
     def catalog():
-        q = request.args.get("q", "")
-        rows = _filter_rows(S.list_catalog(get_conn()), q,
-                            ["name", "article_number", "description", "unit"])
-        return render_template("catalog.html", items=rows, q=q)
+        return render_template("catalog.html", items=S.list_catalog(get_conn()),
+                               q=request.args.get("q", ""))
 
     @app.route("/katalog/neu", methods=["GET", "POST"])
     @app.route("/katalog/<int:iid>", methods=["GET", "POST"])
@@ -465,11 +441,15 @@ def create_app() -> Flask:
                 flash(f"Sicherung erstellt: {out.name}", "success")
             elif action == "selftest":
                 r = _bk.self_test()
-                if r["ok"]:
-                    flash(f"Selbsttest bestanden: {r['invoices']} Rechnungen und "
-                          f"{r['belege']} Belege gesichert und wieder lesbar.", "success")
-                else:
+                if not r["ok"]:
                     flash(f"Selbsttest FEHLGESCHLAGEN: {r['error']}", "error")
+                elif r.get("mode") == "probelauf":
+                    flash("Backup-Mechanismus funktioniert – es gibt aber noch keine "
+                          "Sicherung. Bitte einmal „Sicherung jetzt erstellen“.", "success")
+                else:
+                    flash(f"Neueste Sicherung geprüft, alles in Ordnung: {r['invoices']} "
+                          f"Rechnungen und {r['belege']} Belege lesbar ({r['archive']}).",
+                          "success")
             elif action == "restore":
                 up = request.files.get("backup_zip")
                 tmp_path = None

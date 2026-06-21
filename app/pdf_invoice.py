@@ -340,7 +340,9 @@ def render(ctx: dict) -> bytes:
         # Bei der Mahnung verweist der Verwendungszweck auf die Original-Rechnung
         qr_ref = inv.get("reference_number") if is_dunning else inv.get("number", "")
         qr_png = payment_qr.girocode_png(
-            company.get("name", ""), company.get("iban", ""), company.get("bic", ""),
+            # Empfänger = Kontoinhaber (Inhaber), nicht der Firmenname
+            company.get("owner") or company.get("name", ""),
+            company.get("iban", ""), company.get("bic", ""),
             calc.total_net if no_vat else calc.total_gross,
             f"Rechnung {qr_ref}", dark=_rgb_to_hex(primary))
     block_y = pdf.get_y()

@@ -106,21 +106,37 @@ def _zip_is_valid(zip_path: str | Path) -> tuple[bool, str]:
         return False, f"Backup nicht lesbar: {e}"
 
 
-def self_test(backup_dir: str | Path | None = None) -> dict:
-    """Erstellt eine Sicherung und prüft sie sofort auf Lesbarkeit/Vollständigkeit.
-    Verändert die laufenden Daten NICHT. Gibt {ok, error, invoices, belege, archive}."""
-    try:
-        archive = make_backup(backup_dir or default_backup_dir())
-    except Exception as e:  # pragma: no cover
-        return {"ok": False, "error": f"Sicherung schlug fehl: {e}"}
+def _zip_summary(archive: Path) -> dict:
     ok, msg = _zip_is_valid(archive)
     if not ok:
         return {"ok": False, "error": msg, "archive": archive.name}
     with zipfile.ZipFile(archive) as z:
-        belege = sum(1 for n in z.namelist() if n.startswith("belege/"))
-    n_inv = msg.split()[0]
-    return {"ok": True, "error": "", "invoices": n_inv, "belege": belege,
+        belege = sum(1 for n in z.namelist()
+                     if n.startswith("belege/") and not n.endswith("/"))
+    return {"ok": True, "error": "", "invoices": msg.split()[0], "belege": belege,
             "archive": archive.name}
+
+
+def self_test(backup_dir: str | Path | None = None) -> dict:
+    """Prüft, ob die Sicherung in Ordnung ist – OHNE eine neue anzulegen.
+
+    Geprüft wird die NEUESTE vorhandene Sicherung (Lesbarkeit + Vollständigkeit).
+    Existiert noch keine, wird der Mechanismus in einem temporären Ordner getestet
+    (die Probe-Datei wird sofort wieder gelöscht). Die laufenden Daten bleiben
+    unangetastet. Gibt {ok, error, invoices, belege, archive, mode}."""
+    backups = list_backups(backup_dir)
+    if backups:
+        res = _zip_summary(Path(backups[0]["path"]))
+        res["mode"] = "vorhanden"
+        return res
+    # noch keine Sicherung -> Probelauf, ohne eine Datei zu hinterlassen
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            res = _zip_summary(make_backup(tmp))
+    except Exception as e:  # pragma: no cover
+        return {"ok": False, "error": f"Sicherung schlug fehl: {e}", "mode": "probelauf"}
+    res["mode"] = "probelauf"
+    return res
 
 
 def restore(zip_path: str | Path, make_safety: bool = True) -> dict:

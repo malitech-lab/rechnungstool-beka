@@ -159,12 +159,19 @@ def main() -> None:
         raise SystemExit(_run_backup())
 
     url = f"http://{config.SERVER_HOST}:{config.SERVER_PORT}/"
-    log.info("Rechnungstool startet – Daten-Ordner: %s", config.DATA_DIR)
+    # --hidden/--minimized: nur den Server (+ Tray) starten, KEIN Fenster öffnen.
+    # Genutzt vom Autostart beim Anmelden – die Oberfläche öffnet man dann über die
+    # Desktop-Verknüpfung (oder das Tray-Icon).
+    hidden = "--hidden" in sys.argv or "--minimized" in sys.argv
+    log.info("Rechnungstool startet%s – Daten-Ordner: %s",
+             " (Hintergrund)" if hidden else "", config.DATA_DIR)
 
     # Läuft schon eine Instanz? Dann nur das Fenster öffnen, keinen 2. Server.
     if _port_in_use(config.SERVER_HOST, config.SERVER_PORT):
-        log.info("Server läuft bereits – öffne nur das Fenster (%s).", url)
-        _open_app_window(url)
+        log.info("Server läuft bereits – %s (%s).",
+                 "nichts zu tun" if hidden else "öffne nur das Fenster", url)
+        if not hidden:
+            _open_app_window(url)
         return
 
     from app.server import create_app
@@ -172,7 +179,8 @@ def main() -> None:
 
     server = threading.Thread(target=_serve, args=(app,), daemon=True)
     server.start()
-    threading.Timer(1.0, _open_app_window, args=[url]).start()
+    if not hidden:
+        threading.Timer(1.0, _open_app_window, args=[url]).start()
 
     # Im paketierten Windows-Betrieb hält das Tray-Icon den Prozess am Leben.
     # Sonst (Entwicklung/Konsole) blockierend am Server-Thread hängen bleiben.

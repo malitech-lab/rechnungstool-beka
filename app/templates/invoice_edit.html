@@ -134,9 +134,6 @@
     <h2>Beleg</h2>
     <div class="actions">
       <a class="btn" href="{{ url_for('invoice_pdf', iid=inv.id) }}">⬇ {% if is_offer %}Angebot (PDF){% elif is_dunning %}Mahnung (PDF){% else %}PDF-Rechnung{% endif %}</a>
-      {% if inv.xml_file %}
-      <a class="btn ghost" href="{{ url_for('invoice_einvoice_check', iid=inv.id) }}">🔎 E-Rechnung prüfen</a>
-      {% endif %}
       {% if is_offer %}
       <form method="post" action="{{ url_for('offer_to_invoice', iid=inv.id) }}">
         <button class="btn accent">→ In Rechnung umwandeln</button></form>

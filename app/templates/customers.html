@@ -2,12 +2,11 @@
 {% block heading %}Kunden{% endblock %}
 {% block topbar_actions %}<a class="btn" href="{{ url_for('customer_edit') }}">+ Neuer Kunde</a>{% endblock %}
 {% block content %}
-<form method="get" class="inline" style="gap:6px; margin-bottom:12px">
+<form class="inline" style="gap:6px; margin-bottom:12px; align-items:center" autocomplete="off">
   <input type="search" name="q" value="{{ q }}" placeholder="Name, Ort oder Kunden-Nr. …" style="min-width:280px">
-  <button class="btn ghost sm">Suchen</button>
-  {% if q %}<a class="btn ghost sm" href="{{ url_for('customers') }}" title="Suche zurücksetzen">×</a>{% endif %}
+  <a href="#" class="btn ghost sm" id="searchClear" title="Suche zurücksetzen" style="display:none">×</a>
+  <span id="searchHint" class="help"></span>
 </form>
-{% if q %}<p class="help">{{ customers|length }} Treffer für „{{ q }}".</p>{% endif %}
 <div class="card">
   {% if customers %}
   <div class="table-wrap"><table>

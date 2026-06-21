@@ -15,6 +15,17 @@ class MailError(Exception):
     pass
 
 
+def _ssl_context() -> ssl.SSLContext:
+    """TLS-Kontext mit einem zuverlässigen CA-Bundle (certifi). Wichtig, weil weder
+    macOS noch die gepackte Windows-EXE einen verlässlichen System-Zertifikatsspeicher
+    garantieren – sonst: CERTIFICATE_VERIFY_FAILED."""
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        return ssl.create_default_context()
+
+
 def is_configured(company: dict) -> bool:
     return bool((company.get("smtp_host") or "").strip()
                 and (smtp_from(company)).strip())
@@ -55,8 +66,7 @@ def _smtp_send(company: dict, msg: EmailMessage) -> None:
                         "STARTTLS oder SSL/TLS in den Einstellungen wählen.")
     try:
         if security == "ssl":
-            ctx = ssl.create_default_context()
-            with smtplib.SMTP_SSL(host, port, timeout=30, context=ctx) as s:
+            with smtplib.SMTP_SSL(host, port, timeout=30, context=_ssl_context()) as s:
                 if user:
                     s.login(user, pw)
                 s.send_message(msg)
@@ -64,7 +74,7 @@ def _smtp_send(company: dict, msg: EmailMessage) -> None:
             with smtplib.SMTP(host, port, timeout=30) as s:
                 s.ehlo()
                 if security == "starttls":
-                    s.starttls(context=ssl.create_default_context())
+                    s.starttls(context=_ssl_context())
                     s.ehlo()
                 if user:
                     s.login(user, pw)

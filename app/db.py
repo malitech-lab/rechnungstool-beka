@@ -201,6 +201,12 @@ def connect() -> sqlite3.Connection:
     conn = sqlite3.connect(config.DB_PATH, detect_types=sqlite3.PARSE_DECLTYPES)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    # Absturz-/Stromausfall-Sicherheit: WAL überlebt abruptes Herunterfahren ohne
+    # Korruption, synchronous=FULL macht jede gespeicherte Buchung dauerhaft
+    # (fsync je Commit). busy_timeout vermeidet "database is locked".
+    conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute("PRAGMA synchronous = FULL")
+    conn.execute("PRAGMA busy_timeout = 5000")
     return conn
 
 

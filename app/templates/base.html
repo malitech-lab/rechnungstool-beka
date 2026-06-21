@@ -55,5 +55,35 @@
   </main>
 </div>
 {% block scripts %}{% endblock %}
+<script>
+/* Live-Suche: filtert die Listen-Tabelle sofort beim Tippen (kein „Suchen"-Klick
+   nötig). Leeres Feld zeigt wieder alle Zeilen. */
+(function () {
+  var inp = document.querySelector('input[type="search"][name="q"]');
+  var table = document.querySelector('.content table');
+  if (!inp || !table) return;
+  var hint = document.getElementById('searchHint');
+  var clear = document.getElementById('searchClear');
+  function apply() {
+    var q = inp.value.trim().toLowerCase();
+    var shown = 0, rows = table.querySelectorAll('tbody > tr');
+    rows.forEach(function (tr) {
+      if (tr.querySelector('td[colspan]')) return;        // „keine Einträge"-Zeile
+      var match = !q || tr.textContent.toLowerCase().indexOf(q) > -1;
+      tr.style.display = match ? '' : 'none';
+      if (match) shown++;
+    });
+    if (hint) hint.textContent = q ? (shown + ' Treffer') : '';
+    if (clear) clear.style.display = inp.value ? '' : 'none';
+  }
+  inp.addEventListener('input', apply);
+  if (clear) clear.addEventListener('click', function (e) {
+    e.preventDefault(); inp.value = ''; apply(); inp.focus();
+  });
+  // Enter soll nicht die Seite neu laden – die Live-Suche genügt.
+  if (inp.form) inp.form.addEventListener('submit', function (e) { e.preventDefault(); inp.blur(); });
+  apply();   // beim Laden anwenden (z. B. vorbelegtes Suchfeld)
+})();
+</script>
 </body>
 </html>

@@ -44,9 +44,17 @@ Source: "harden.cmd";           DestDir: "{app}\deploy"; Flags: ignoreversion
 Source: "register-backup.cmd";  DestDir: "{app}\deploy"; Flags: ignoreversion
 Source: "backup-jetzt.cmd";     DestDir: "{app}\deploy"; Flags: ignoreversion
 
+[Tasks]
+Name: "autostart"; Description: "Beim Anmelden automatisch im Hintergrund starten (empfohlen)"; \
+  GroupDescription: "Autostart:"
+
 [Icons]
+; Startmenü + Desktop: öffnen die Bedienoberfläche (Web-App-Fenster).
 Name: "{group}\{#AppName}";        Filename: "{app}\{#ExeName}"
 Name: "{autodesktop}\{#AppName}";  Filename: "{app}\{#ExeName}"
+; Autostart: startet den Server unsichtbar im Hintergrund (ohne Fenster).
+Name: "{commonstartup}\{#AppName} (Hintergrund)"; Filename: "{app}\{#ExeName}"; \
+  Parameters: "--hidden"; Tasks: autostart
 
 [Run]
 ; NUR bei Erst-Installation: Datenordner haerten + taegliche Sicherung registrieren.
@@ -99,8 +107,9 @@ end;
 
 function ShouldSkipPage(PageID: Integer): Boolean;
 begin
-  // Beim Update die Einrichtungs-Seite ueberspringen.
-  Result := (PageID = CfgPage.ID) and gUpgrade;
+  // Beim Update Einrichtungs- und Aufgaben-Seite ueberspringen (Autostart bleibt
+  // wie zuvor; die Verknuepfungen werden ohnehin neu geschrieben).
+  Result := gUpgrade and ((PageID = CfgPage.ID) or (PageID = wpSelectTasks));
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;

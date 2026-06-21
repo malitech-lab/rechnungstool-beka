@@ -13,6 +13,10 @@ pypdfium2==5.10.1
 pystray==0.19.5
 # pystray: Tray-Icon zum sauberen Beenden, wenn die EXE ohne Konsolenfenster
 # (console=False) läuft. Nutzt Pillow (bereits vorhanden). Nur Windows-relevant.
+certifi==2026.6.17
+# certifi: verlässliches CA-Wurzelzertifikat-Bundle für den TLS-E-Mail-Versand
+# (SMTP). Ohne es: CERTIFICATE_VERIFY_FAILED, weil weder macOS noch die gepackte
+# EXE einen garantierten System-Zertifikatsspeicher haben.
 # Hinweis: Das Logo liegt fertig als PNG/SVG bei (app/static/img/). cairosvg wird
 # NUR zum Neu-Erzeugen des Logos benötigt und ist KEINE Laufzeit-Abhängigkeit.
 # Werkzeug/Jinja2 werden von Flask mitinstalliert.

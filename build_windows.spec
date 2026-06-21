@@ -17,6 +17,8 @@ datas += collect_data_files("drafthorse")
 datas += [("app/templates", "app/templates"), ("app/static", "app/static")]
 # PDFium-Bibliothek von pypdfium2 (native DLL) mitnehmen
 datas += collect_data_files("pypdfium2_raw")
+# certifi-CA-Bundle (cacert.pem) für den TLS-E-Mail-Versand mitnehmen
+datas += collect_data_files("certifi")
 
 binaries = []
 binaries += collect_dynamic_libs("pypdfium2_raw")
@@ -25,7 +27,7 @@ hiddenimports = collect_submodules("drafthorse")
 hiddenimports += ["lxml._elementpath", "lxml.etree", "segno", "PIL", "PIL.Image",
                   "PIL.ImageDraw", "pypdfium2", "pypdfium2_raw",
                   # App-Fenster/Tray + Backup-Modul (lazy importiert in run.py)
-                  "pystray", "pystray._win32", "app.backup"]
+                  "pystray", "pystray._win32", "app.backup", "certifi"]
 
 a = Analysis(
     ["run.py"],

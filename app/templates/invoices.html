@@ -11,14 +11,12 @@
     <a class="btn ghost sm {{ 'active' if status=='entwurf' }}" href="{{ url_for('invoices', status='entwurf', q=q) }}">Entwürfe</a>
     <a class="btn ghost sm {{ 'active' if status=='festgeschrieben' }}" href="{{ url_for('invoices', status='festgeschrieben', q=q) }}">Festgeschrieben</a>
   </div>
-  <form method="get" class="inline" style="gap:6px">
-    {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+  <form class="inline" style="gap:6px; align-items:center" autocomplete="off">
     <input type="search" name="q" value="{{ q }}" placeholder="Nummer, Kunde oder Betreff …" style="min-width:240px">
-    <button class="btn ghost sm">Suchen</button>
-    {% if q %}<a class="btn ghost sm" href="{{ url_for('invoices', status=status) }}" title="Suche zurücksetzen">×</a>{% endif %}
+    <a href="#" class="btn ghost sm" id="searchClear" title="Suche zurücksetzen" style="display:none">×</a>
+    <span id="searchHint" class="help"></span>
   </form>
 </div>
-{% if q %}<p class="help">{{ invoices|length }} Treffer für „{{ q }}".</p>{% endif %}
 <div class="card">
   {% include "_invoice_table.html" %}
 </div>
