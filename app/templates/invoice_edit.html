@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% set draft = inv.status == 'entwurf' %}
+{% set is_offer = inv.doc_type == 'angebot' %}
+{% set is_dunning = inv.doc_type == 'mahnung' %}
+{% set doc_label = 'Angebot' if is_offer else ('Mahnung' if is_dunning else 'Rechnung') %}
+{% block title %}{{ doc_label }} {{ inv.invoice_number or 'Entwurf' }}{% endblock %}
+{% block content_class %}wide{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/flatpickr.min.css') }}">
+<style>
+  .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange,
+  .flatpickr-day.selected:hover, .flatpickr-day.startRange:hover, .flatpickr-day.endRange:hover {
+    background: var(--primary); border-color: var(--primary); color: #fff; }
+  .flatpickr-day.inRange { background: #e7edf4; border-color: #e7edf4;
+    box-shadow: -5px 0 0 #e7edf4, 5px 0 0 #e7edf4; }
+  .flatpickr-months .flatpickr-month, .flatpickr-current-month { color: var(--primary); }
+  span.flatpickr-weekday { color: var(--primary); }
+  /* Leistungszeitraum-Feld wie die nativen Datumsfelder aussehen lassen (Kalender-Symbol) */
+  input.fp-alt {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7785' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center; background-size: 16px 16px;
+    padding-right: 34px; cursor: pointer;
+  }
+</style>
+{% endblock %}
+{% block heading %}
+  {% if draft %}{{ doc_label }} bearbeiten{% else %}{{ doc_label }} {{ inv.invoice_number }}{% endif %}
+  {% if is_offer %}<span class="badge blue">Angebot</span>{% endif %}
+  {% if is_dunning %}<span class="badge red">Mahnung</span>{% endif %}
+  {% if inv.doc_type == 'storno' %}<span class="badge red">Storno</span>{% endif %}
+{% endblock %}
+{% block topbar_actions %}<a class="btn ghost" href="{{ url_for('invoices') }}">← Liste</a>{% endblock %}
+{% block content %}
+
+<div class="editor-layout">
+  <!-- ============ LINKS: Formular / Details ============ -->
+  <div class="editor-main">
+
+  {% if draft %}
+  <form method="post" action="{{ url_for('invoice_save', iid=inv.id) }}" id="invForm">
+  <input type="hidden" name="items_json" id="items_json">
+  <input type="hidden" name="_action" id="formAction" value="save">
+  <input type="hidden" name="doc_type" value="{{ inv.doc_type }}">
+  <input type="hidden" name="tax_mode" value="{{ inv.tax_mode or 'regel' }}">
+
+  <div class="editor-toolbar">
+    <div class="actions">
+      <button type="submit" class="btn ghost" onclick="document.getElementById('formAction').value='save'">💾 Entwurf</button>
+      <button type="submit" class="btn accent" id="btnFestschreiben"
+        onclick="document.getElementById('formAction').value='festschreiben'"
+        {{ 'disabled' if errors }}>📄 Als PDF erstellen</button>
+      <span id="autosaveState" class="help" style="align-self:center"></span>
+      <div class="spacer"></div>
+      <button type="submit" class="btn danger" formaction="{{ url_for('invoice_delete', iid=inv.id) }}"
+        onclick="return confirm('Entwurf wirklich löschen?')">Löschen</button>
+    </div>
+  </div>
+
+  <div class="alert err" id="valErrors" {{ '' if errors else 'hidden' }}>
+    <strong>PDF kann noch nicht erstellt werden:</strong>
+    <ul>{% for e in errors %}<li>{{ e.message }}</li>{% endfor %}</ul></div>
+  {% if warnings %}
+  <div class="alert warn"><strong>Hinweise:</strong>
+    <ul>{% for w in warnings %}<li>{{ w.message }}</li>{% endfor %}</ul></div>
+  {% endif %}
+
+  <div class="card tight">
+    <h2>Eckdaten</h2>
+    {% set sel = (customers | selectattr('id','equalto',inv.customer_id) | list | first) if inv.customer_id else none %}
+    <div class="field">
+      <label>Kunde</label>
+      <div class="combo" id="customerCombo">
+        <input type="text" id="customerSearch" autocomplete="off" placeholder="Kunde suchen – Name, Ort oder Nummer …"
+          value="{% if sel %}{{ sel.company_name or sel.contact_name }}{% if sel.city %} · {{ sel.city }}{% endif %} ({{ sel.customer_number }}){% endif %}">
+        <input type="hidden" name="customer_id" id="customerId" value="{{ inv.customer_id or '' }}">
+        <div class="combo-list" id="customerList" hidden></div>
+      </div>
+      <div class="help"><a href="{{ url_for('customer_edit') }}" target="_blank">+ neuen Kunden anlegen</a></div>
+    </div>
+    <div class="field"><label>Betreff / Bauvorhaben</label>
+      <input name="title" value="{{ inv.title }}" placeholder="z. B. Schornsteinsanierung Speyer"></div>
+    <div class="inline">
+      <div class="field"><label>Rechnungsdatum</label><input type="date" name="invoice_date" value="{{ inv.invoice_date }}"></div>
+      <div class="field" style="flex:2"><label>Leistungszeitraum</label>
+        <input type="text" id="serviceRange" placeholder="Zeitraum im Kalender wählen …" readonly>
+        <input type="hidden" name="service_date" id="serviceFrom" value="{{ inv.service_date }}">
+        <input type="hidden" name="service_date_end" id="serviceTo" value="{{ inv.service_date_end }}"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Positionen</h2>
+    <div class="toolbar">
+      <select id="catalogPick" style="max-width:340px">
+        <option value="">+ aus Katalog übernehmen …</option>
+        {% for it in catalog %}
+          <option value="{{ it.id }}" data-name="{{ it.name }}" data-desc="{{ it.description }}"
+            data-unit="{{ it.unit }}" data-price="{{ it.unit_price }}" data-tax="{{ it.tax_rate }}"
+            data-art="{{ it.article_number }}" data-type="{{ it.kind }}">{{ it.name }} ({{ it.unit_price | eur }}/{{ it.unit }})</option>
+        {% endfor %}
+      </select>
+      <button type="button" class="btn ghost sm" onclick="Editor.addRow()">+ Position</button>
+      <button type="button" class="btn ghost sm" onclick="Editor.addText()">+ Zwischentext</button>
+    </div>
+    <div class="table-wrap"><table class="pos-table" id="posTable">
+      <thead><tr>
+        <th style="width:18px"></th><th>Bezeichnung</th>
+        <th style="width:66px" class="num">Menge</th><th style="width:74px">Einheit</th>
+        <th style="width:100px" class="num">Einzel €</th><th style="width:70px" class="num">Rab. %</th>
+        <th style="width:104px" class="num">Gesamt €</th>
+        <th style="width:24px"></th>
+      </tr></thead>
+      <tbody id="posBody"></tbody>
+    </table></div>
+    <div class="totals" id="totals" style="margin-top:14px"></div>
+  </div>
+  </form>
+
+  {% else %}
+  <!-- ===== Festgeschrieben: schreibgeschützte Ansicht ===== -->
+  <div class="card tight">
+    <h2>Eckdaten</h2>
+    <table>
+      <tr><th>Kunde</th><td>{{ (customers|selectattr('id','equalto',inv.customer_id)|map(attribute='company_name')|first) or '' }}
+        {{ (customers|selectattr('id','equalto',inv.customer_id)|map(attribute='contact_name')|first) or '' }}</td></tr>
+      <tr><th>Betreff</th><td>{{ inv.title }}</td></tr>
+      <tr><th>Datum</th><td>{{ inv.invoice_date | de }}</td></tr>
+      <tr><th>Leistungszeitraum</th><td>{{ inv.service_date | de }}{% if inv.service_date_end and inv.service_date_end != inv.service_date %} – {{ inv.service_date_end | de }}{% endif %}</td></tr>
+      <tr><th>Betrag</th><td><strong>{{ inv.total_gross | eur }}</strong> (netto {{ inv.total_net | eur }}, MwSt {{ inv.total_tax | eur }})</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Beleg</h2>
+    <div class="actions">
+      <a class="btn" href="{{ url_for('invoice_pdf', iid=inv.id) }}">⬇ {% if is_offer %}Angebot (PDF){% elif is_dunning %}Mahnung (PDF){% else %}PDF-Rechnung{% endif %}</a>
+      {% if inv.xml_file %}
+      <a class="btn ghost" href="{{ url_for('invoice_einvoice_check', iid=inv.id) }}">🔎 E-Rechnung prüfen</a>
+      {% endif %}
+      {% if is_offer %}
+      <form method="post" action="{{ url_for('offer_to_invoice', iid=inv.id) }}">
+        <button class="btn accent">→ In Rechnung umwandeln</button></form>
+      {% endif %}
+      {% if inv.doc_type in ('standard', 'kleinbetrag', 'korrektur') and inv.open > 0.005 %}
+      <form method="post" action="{{ url_for('invoice_dunning', iid=inv.id) }}"
+        onsubmit="return confirm('Mahnung erstellen? Es wird ein Mahn-Beleg festgeschrieben.')">
+        <button class="btn {{ 'danger' if inv.mahn_faellig else 'ghost' }}">⚠ Mahnung erstellen{% if inv.mahn_faellig %} · mahnfällig seit {{ inv.mahn_tage }} T.{% endif %}</button></form>
+      {% endif %}
+      {% if inv.doc_type not in ('storno', 'angebot', 'mahnung') %}
+      <div class="spacer"></div>
+      <form method="post" action="{{ url_for('invoice_storno', iid=inv.id) }}" onsubmit="return confirm('Stornorechnung anlegen?')">
+        <button class="btn danger">↩ Stornieren</button></form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Versand</h2>
+    {% if inv.sent_at %}
+      <div class="alert info" style="margin:0 0 12px">✅ Versendet am {{ inv.sent_at }} ({{ inv.sent_via }}).</div>
+    {% else %}
+      <p class="help" style="margin-top:0">Noch nicht versendet.</p>
+    {% endif %}
+    {% if mail_ready %}
+    <form method="post" action="{{ url_for('invoice_email', iid=inv.id) }}"
+      onsubmit="return confirm('{{ doc_label }} {{ inv.invoice_number }} jetzt per E-Mail senden?')">
+      <div class="inline">
+        <div class="field" style="flex:2"><label>An (E-Mail)</label>
+          <input type="email" name="to" value="{{ cust_email }}" required></div>
+        <div class="field" style="flex:3"><label>Betreff</label>
+          <input name="subject" value="{{ doc_label }} {{ inv.invoice_number }} – {{ company.name }}"></div>
+      </div>
+      <div class="field"><label>Nachricht</label><textarea name="body" rows="4">Sehr geehrte Damen und Herren,
+
+anbei erhalten Sie {{ doc_label }} {{ inv.invoice_number }} als PDF.
+
+Mit freundlichen Grüßen
+{{ company.name }}</textarea></div>
+      <div class="actions" style="margin-top:8px">
+        <button class="btn accent">✉ Per E-Mail senden</button>
+      </div>
+    </form>
+    {% else %}
+    <div class="alert warn" style="margin:0 0 12px">E-Mail-Versand ist nicht eingerichtet – bitte in den
+      <a href="{{ url_for('settings') }}">Einstellungen</a> die SMTP-Daten hinterlegen.</div>
+    {% endif %}
+    <form method="post" action="{{ url_for('invoice_mark_sent', iid=inv.id) }}" style="margin-top:10px">
+      <input type="hidden" name="via" value="Post">
+      <button class="btn ghost">✓ Als „per Post" versendet markieren</button>
+    </form>
+  </div>
+
+  {% if not is_offer and not is_dunning %}
+  <div class="card">
+    <h2>Zahlungen</h2>
+    <table>
+      <thead><tr><th>Datum</th><th>Art</th><th class="num">Betrag</th><th>Notiz</th></tr></thead>
+      <tbody>
+      {% for p in payments %}<tr><td>{{ p.date | de }}</td><td>{{ p.method }}</td><td class="num">{{ p.amount | eur }}</td><td>{{ p.note }}</td></tr>
+      {% else %}<tr><td colspan="4" class="muted">Noch keine Zahlungen.</td></tr>{% endfor %}
+      </tbody>
+      <tfoot><tr><th colspan="2">Bezahlt / Offen</th><th class="num">{{ paid | eur }}</th><th>offen: {{ (inv.total_gross - paid) | eur }}</th></tr></tfoot>
+    </table>
+    {% if inv.doc_type != 'storno' %}
+    <form method="post" action="{{ url_for('invoice_payment', iid=inv.id) }}" class="inline" style="margin-top:12px; align-items:flex-end">
+      <div class="field"><label>Datum</label><input type="date" name="date" value="{{ today }}"></div>
+      <div class="field"><label>Betrag €</label><input name="amount" value="{{ (inv.total_gross - paid)|round(2) }}"></div>
+      <div class="field"><label>Art</label><select name="method"><option>Überweisung</option><option>Bar</option><option>EC/Karte</option><option>PayPal</option></select></div>
+      <div class="field" style="flex:2"><label>Notiz</label><input name="note"></div>
+      <div class="field" style="flex:0"><button class="btn">+ Zahlung</button></div>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}{# Ende: Zahlungen nur bei Rechnungen #}
+  {% endif %}{# Ende: festgeschriebene Ansicht #}
+  </div>
+
+  <!-- ============ RECHTS: mitlaufende PDF-Vorschau ============ -->
+  <div class="editor-side">
+    <div class="preview-head">
+      <span class="ttl">📄 Vorschau</span>
+      <span class="preview-state" id="prevState"></span>
+    </div>
+    <div class="preview-frame">
+      <img id="pdfPreview" alt="Vorschau"
+        {% if not draft %}src="{{ url_for('invoice_preview_png', iid=inv.id) }}"{% endif %}>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+const INITIAL_ITEMS = {{ inv['items'] | tojson }};
+const IS_DRAFT = {{ 'true' if draft else 'false' }};
+const PREVIEW_URL = "{{ url_for('invoice_preview', iid=inv.id) }}";
+const CUSTOMERS = [{% for c in customers %}{id: {{ c.id }}, name: {{ (c.company_name or c.contact_name) | tojson }}, city: {{ c.city | tojson }}, nr: {{ c.customer_number | tojson }}}{{ ',' if not loop.last }}{% endfor %}];
+</script>
+<script src="{{ url_for('static', filename='vendor/flatpickr.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/flatpickr-de.js') }}"></script>
+<script src="{{ url_for('static', filename='editor.js') }}"></script>
+{% endblock %}

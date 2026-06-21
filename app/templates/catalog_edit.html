@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block heading %}{{ 'Position bearbeiten' if item else 'Neue Katalogposition' }}{% endblock %}
+{% block topbar_actions %}<a class="btn ghost" href="{{ url_for('catalog') }}">← Katalog</a>{% endblock %}
+{% block content %}
+{% set it = item or {} %}
+<form method="post">
+<div class="card">
+  <div class="inline">
+    <div class="field" style="flex:0; min-width:160px"><label>Typ</label>
+      <select name="kind">
+        <option value="leistung" {{ 'selected' if it.get('kind','leistung')=='leistung' }}>Leistung</option>
+        <option value="material" {{ 'selected' if it.get('kind')=='material' }}>Material</option>
+      </select></div>
+    <div class="field" style="flex:0; min-width:160px"><label>Artikel-Nr.</label>
+      <input name="article_number" value="{{ it.get('article_number','') }}"></div>
+    <div class="field"><label>Bezeichnung</label>
+      <input name="name" value="{{ it.get('name','') }}" required></div>
+  </div>
+  <div class="field"><label>Beschreibung</label><textarea name="description">{{ it.get('description','') }}</textarea></div>
+  <div class="inline">
+    <div class="field"><label>Einheit</label>
+      <input name="unit" list="units" value="{{ it.get('unit','Stk') }}">
+      <datalist id="units"><option>Std</option><option>m²</option><option>lfm</option>
+        <option>Stk</option><option>pauschal</option><option>m³</option><option>kg</option></datalist></div>
+    <div class="field"><label>Preis netto (€)</label>
+      <input name="unit_price" value="{{ it.get('unit_price',0) }}"></div>
+  </div>
+  <div class="check"><input type="checkbox" name="active" id="act" {{ 'checked' if it.get('active',1) }}>
+    <label for="act">aktiv</label></div>
+</div>
+<div class="actions"><button class="btn">💾 Speichern</button>
+  <a class="btn ghost" href="{{ url_for('catalog') }}">Abbrechen</a></div>
+</form>
+{% endblock %}

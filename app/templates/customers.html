@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block heading %}Kunden{% endblock %}
+{% block topbar_actions %}<a class="btn" href="{{ url_for('customer_edit') }}">+ Neuer Kunde</a>{% endblock %}
+{% block content %}
+<form method="get" class="inline" style="gap:6px; margin-bottom:12px">
+  <input type="search" name="q" value="{{ q }}" placeholder="Name, Ort oder Kunden-Nr. …" style="min-width:280px">
+  <button class="btn ghost sm">Suchen</button>
+  {% if q %}<a class="btn ghost sm" href="{{ url_for('customers') }}" title="Suche zurücksetzen">×</a>{% endif %}
+</form>
+{% if q %}<p class="help">{{ customers|length }} Treffer für „{{ q }}".</p>{% endif %}
+<div class="card">
+  {% if customers %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Nr.</th><th>Name</th><th>Ort</th><th>Kontakt</th><th></th></tr></thead>
+    <tbody>
+    {% for c in customers %}
+      <tr>
+        <td>{{ c.customer_number }}</td>
+        <td><a href="{{ url_for('customer_edit', cid=c.id) }}">{{ c.company_name or c.contact_name }}</a></td>
+        <td>{{ c.zip }} {{ c.city }}</td>
+        <td class="muted">{{ c.email or c.phone }}</td>
+        <td class="num"><a class="btn ghost sm" href="{{ url_for('customer_edit', cid=c.id) }}">bearbeiten</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<div class="empty">Noch keine Kunden. <a href="{{ url_for('customer_edit') }}">Ersten Kunden anlegen</a>.</div>{% endif %}
+</div>
+{% endblock %}

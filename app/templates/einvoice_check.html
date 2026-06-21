@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block heading %}E-Rechnung prüfen – {{ inv.invoice_number }}{% endblock %}
+{% block topbar_actions %}<a class="btn ghost" href="{{ url_for('invoice_edit', iid=inv.id) }}">← Zurück</a>{% endblock %}
+{% block content %}
+
+{% if result.ok and not result.warnings %}
+<div class="alert info"><strong>✅ Alles in Ordnung.</strong> Die E-Rechnung erfüllt die geprüften
+  EN-16931-Geschäftsregeln ({{ result.checked }} Regeln, keine Beanstandung).</div>
+{% elif result.ok %}
+<div class="alert info"><strong>✅ Keine Fehler.</strong> Die E-Rechnung erfüllt die EN-16931-Pflichtregeln.
+  Es gibt {{ result.warnings|length }} Hinweis(e) – nur für XRechnung/Behörden (B2G) relevant.</div>
+{% else %}
+<div class="alert err"><strong>⚠ {{ result.errors|length }} Fehler.</strong> Diese Punkte verletzen
+  Geschäftsregeln der EN 16931 und sollten korrigiert werden.</div>
+{% endif %}
+
+{% if result.errors %}
+<div class="card">
+  <h2>Fehler</h2>
+  <ul>{% for e in result.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if result.warnings %}
+<div class="card">
+  <h2>Hinweise</h2>
+  <p class="help" style="margin-top:0">Diese Regeln (BR-DE-*) gelten für <strong>XRechnung an Behörden</strong>.
+    Für normale Kunden-Rechnungen (ZUGFeRD EN 16931) sind sie nicht zwingend.</p>
+  <ul>{% for w in result.warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+<p class="help">Geprüft wird eine pragmatische Teilmenge der EN-16931-/BR-DE-Geschäftsregeln.
+  Für eine verbindliche B2G-Abnahme bleibt der offizielle KoSIT-Validator die Referenz; die
+  erzeugte XML kann dort zusätzlich geprüft werden.</p>
+{% endblock %}

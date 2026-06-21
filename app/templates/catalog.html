@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block heading %}Leistungskatalog{% endblock %}
+{% block topbar_actions %}<a class="btn" href="{{ url_for('catalog_edit') }}">+ Neue Position</a>{% endblock %}
+{% block content %}
+<form method="get" class="inline" style="gap:6px; margin-bottom:12px">
+  <input type="search" name="q" value="{{ q }}" placeholder="Bezeichnung oder Artikel-Nr. …" style="min-width:280px">
+  <button class="btn ghost sm">Suchen</button>
+  {% if q %}<a class="btn ghost sm" href="{{ url_for('catalog') }}" title="Suche zurücksetzen">×</a>{% endif %}
+</form>
+{% if q %}<p class="help">{{ items|length }} Treffer für „{{ q }}".</p>{% endif %}
+<div class="card">
+  {% if items %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Art-Nr.</th><th>Bezeichnung</th><th>Typ</th><th>Einheit</th>
+      <th class="num">Preis netto</th><th></th></tr></thead>
+    <tbody>
+    {% for it in items %}
+      <tr>
+        <td>{{ it.article_number }}</td>
+        <td><a href="{{ url_for('catalog_edit', iid=it.id) }}">{{ it.name }}</a>
+          {% if not it.active %}<span class="badge gray">inaktiv</span>{% endif %}
+          {% if it.description %}<div class="help">{{ it.description }}</div>{% endif %}</td>
+        <td>{{ 'Material' if it.kind=='material' else 'Leistung' }}</td>
+        <td>{{ it.unit }}</td>
+        <td class="num">{{ it.unit_price | eur }}</td>
+        <td class="num"><a class="btn ghost sm" href="{{ url_for('catalog_edit', iid=it.id) }}">bearbeiten</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<div class="empty">Katalog ist leer.</div>{% endif %}
+</div>
+{% endblock %}

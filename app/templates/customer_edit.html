@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block heading %}{{ 'Kunde bearbeiten' if cust else 'Neuer Kunde' }}{% endblock %}
+{% block topbar_actions %}<a class="btn ghost" href="{{ url_for('customers') }}">← Liste</a>{% endblock %}
+{% block content %}
+{% set c = cust or {} %}
+<form method="post">
+<div class="card">
+  <h2>Kontaktdaten</h2>
+  <div class="inline">
+    <div class="field" style="flex:0; min-width:140px"><label>Anrede</label>
+      <select name="salutation">
+        {% for s in ['','Herr','Frau','Firma'] %}
+          <option value="{{ s }}" {{ 'selected' if c.get('salutation')==s }}>{{ s or '–' }}</option>
+        {% endfor %}
+      </select></div>
+    <div class="field"><label>Vorname</label>
+      <input name="first_name" value="{{ c.get('first_name','') }}" placeholder="z. B. Max"></div>
+    <div class="field"><label>Nachname</label>
+      <input name="last_name" value="{{ c.get('last_name','') }}" placeholder="z. B. Mustermann"></div>
+  </div>
+  <div class="field"><label>Firma (optional)</label>
+    <input name="company_name" value="{{ c.get('company_name','') }}" placeholder="z. B. Bau GmbH"></div>
+  <div class="field"><label>Straße &amp; Hausnummer</label>
+    <input name="street" value="{{ c.get('street','') }}" placeholder="z. B. Hauptstraße 12"></div>
+  <div class="inline">
+    <div class="field" style="flex:0; min-width:130px"><label>PLZ</label><input name="zip" value="{{ c.get('zip','') }}" placeholder="z. B. 67346"></div>
+    <div class="field" style="flex:2"><label>Ort</label><input name="city" value="{{ c.get('city','') }}" placeholder="z. B. Speyer"></div>
+  </div>
+  <div class="inline">
+    <div class="field"><label>E-Mail</label><input name="email" value="{{ c.get('email','') }}" placeholder="z. B. info@beispiel.de"></div>
+    <div class="field"><label>Telefon</label><input name="phone" value="{{ c.get('phone','') }}" placeholder="z. B. 0176 12345678"></div>
+  </div>
+</div>
+
+<div class="actions"><button class="btn">💾 Speichern</button>
+  <a class="btn ghost" href="{{ url_for('customers') }}">Abbrechen</a></div>
+</form>
+{% endblock %}

@@ -1,0 +1,25 @@
+# Laufzeit-/Nutzerdaten – enthalten echte Geschäftsdaten, niemals einchecken!
+/daten/
+daten/
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+
+# Generierte Belege
+/belege/
+belege/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec.bak
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

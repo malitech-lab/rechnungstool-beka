@@ -1,0 +1,44 @@
+{% if invoices %}
+<div class="table-wrap"><table>
+  <thead><tr>
+    <th>Nummer</th><th>Datum</th><th>Kunde</th><th>Art</th>
+    <th class="num">Brutto</th><th>Status</th><th></th>
+  </tr></thead>
+  <tbody>
+  {% for i in invoices %}
+    <tr>
+      <td class="nowrap">
+        <a href="{{ url_for('invoice_edit', iid=i.id) }}">{{ i.invoice_number or 'Entwurf #' ~ i.id }}</a>
+        {% if i.sent_at %}<div class="help" title="Versendet am {{ i.sent_at }} ({{ i.sent_via }})">✉ versendet</div>{% endif %}
+      </td>
+      <td class="nowrap">{{ i.invoice_date | de }}</td>
+      <td>{{ i.buyer_name }}</td>
+      <td>
+        {% if i.doc_type == 'angebot' %}<span class="badge blue">Angebot</span>
+        {% elif i.doc_type == 'mahnung' %}<span class="badge red">Mahnung</span>
+        {% elif i.doc_type == 'storno' %}<span class="badge red">Storno</span>
+        {% elif i.doc_type == 'kleinbetrag' %}<span class="badge gray">Kleinbetrag</span>
+        {% elif i.doc_type == 'korrektur' %}<span class="badge amber">Korrektur</span>
+        {% else %}<span class="badge gray">Rechnung</span>{% endif %}
+      </td>
+      <td class="num">{{ i.total_gross | eur }}</td>
+      <td>
+        {% if i.status == 'entwurf' %}<span class="badge amber">Entwurf</span>
+        {% elif i.doc_type in ('angebot', 'mahnung') %}<span class="muted">–</span>
+        {% elif i.mahn_faellig %}<span class="badge red">mahnfällig</span>
+        {% elif i.open is defined and i.open > 0.005 %}<span class="badge blue">offen</span>
+        {% else %}<span class="badge green">bezahlt</span>{% endif %}
+      </td>
+      <td class="num nowrap">
+        {% if i.status != 'entwurf' %}
+          <a class="btn ghost sm" href="{{ url_for('invoice_pdf', iid=i.id) }}">PDF</a>
+        {% endif %}
+        <a class="btn ghost sm" href="{{ url_for('invoice_edit', iid=i.id) }}">öffnen</a>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}
+<div class="empty">Noch keine Rechnungen vorhanden.</div>
+{% endif %}

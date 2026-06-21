@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block heading %}Einstellungen / Firmenstammdaten{% endblock %}
+{% block topbar_actions %}<button type="submit" form="settingsForm" class="btn">💾 Speichern</button>{% endblock %}
+{% block content %}
+{% set c = company %}
+<form method="post" enctype="multipart/form-data" id="settingsForm">
+<div class="card">
+  <h2>Firma</h2>
+  <div class="inline">
+    <div class="field" style="flex:2"><label>Firmenname</label><input name="name" value="{{ c.name }}"></div>
+    <div class="field"><label>Inhaber</label><input name="owner" value="{{ c.owner }}"></div>
+    <div class="field"><label>Rechtsform</label><input name="legal_form" value="{{ c.legal_form }}"></div>
+  </div>
+  <div class="field"><label>Straße &amp; Hausnummer</label><input name="street" value="{{ c.street }}"></div>
+  <div class="inline">
+    <div class="field" style="flex:0;min-width:130px"><label>PLZ</label><input name="zip" value="{{ c.zip }}"></div>
+    <div class="field" style="flex:2"><label>Ort</label><input name="city" value="{{ c.city }}"></div>
+  </div>
+  <div class="inline">
+    <div class="field"><label>Telefon</label><input name="phone" value="{{ c.phone }}"></div>
+    <div class="field"><label>E-Mail</label><input name="email" value="{{ c.email }}"></div>
+    <div class="field"><label>Website</label><input name="website" value="{{ c.website }}"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Steuer &amp; Bank</h2>
+  <div class="inline">
+    <div class="field"><label>Steuernummer</label><input name="tax_number" value="{{ c.tax_number }}" placeholder="z. B. 27/123/45678"></div>
+    <div class="field"><label>USt-IdNr.</label><input name="vat_id" value="{{ c.vat_id }}" placeholder="DE… (falls vorhanden)"></div>
+  </div>
+  <div class="inline">
+    <div class="field" style="flex:2"><label>Bank</label><input name="bank_name" value="{{ c.bank_name }}"></div>
+    <div class="field" style="flex:2"><label>IBAN</label><input name="iban" value="{{ c.iban }}"></div>
+    <div class="field"><label>BIC</label><input name="bic" value="{{ c.bic }}"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Rechnungs-Voreinstellungen</h2>
+  <div class="inline">
+    <div class="field"><label>Rechnungs-Präfix</label><input name="invoice_prefix" value="{{ c.invoice_prefix }}"></div>
+    <div class="field"><label>Kunden-Präfix</label><input name="customer_prefix" value="{{ c.customer_prefix }}"></div>
+    <div class="field"><label>Standard-MwSt (%)</label><input name="default_tax_rate" value="{{ c.default_tax_rate }}"></div>
+  </div>
+  <div class="inline">
+    <div class="field" style="flex:1"><label>Standard-Einleitungstext</label><textarea name="intro_text">{{ c.intro_text }}</textarea></div>
+    <div class="field" style="flex:1"><label>Standard-Schlusstext</label><textarea name="footer_text">{{ c.footer_text }}</textarea></div>
+  </div>
+  <div class="inline">
+    <div class="field" style="flex:0;min-width:160px"><label>Primärfarbe</label><input type="color" name="color_primary" value="{{ c.color_primary }}"></div>
+    <div class="field" style="flex:0;min-width:160px"><label>Akzentfarbe</label><input type="color" name="color_accent" value="{{ c.color_accent }}"></div>
+    <div class="field"><label>Logo</label>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;text-align:center">
+        <img src="{{ url_for('static', filename='img/beka-logo.png') }}" alt="Logo" style="max-width:100%;height:auto;max-height:54px">
+      </div>
+      <input type="file" name="logo" accept="image/*"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>E-Mail-Versand (SMTP)</h2>
+  <div class="inline">
+    <div class="field" style="flex:2"><label>Postausgangsserver (SMTP-Host)</label>
+      <input name="smtp_host" value="{{ c.smtp_host }}" placeholder="z. B. smtp.ionos.de"></div>
+    <div class="field" style="flex:0;min-width:120px"><label>Port</label>
+      <input name="smtp_port" value="{{ c.smtp_port or 587 }}" placeholder="587"></div>
+    <div class="field" style="flex:0;min-width:160px"><label>Verschlüsselung</label>
+      <select name="smtp_security">
+        <option value="starttls" {{ 'selected' if c.smtp_security=='starttls' }}>STARTTLS (587)</option>
+        <option value="ssl" {{ 'selected' if c.smtp_security=='ssl' }}>SSL/TLS (465)</option>
+        <option value="none" {{ 'selected' if c.smtp_security=='none' }}>keine</option>
+      </select></div>
+  </div>
+  <div class="inline">
+    <div class="field"><label>Benutzername (Login)</label>
+      <input name="smtp_user" value="{{ c.smtp_user }}" autocomplete="off"></div>
+    <div class="field"><label>Passwort {% if c.smtp_password %}<span class="help">(gesetzt – leer lassen = unverändert){% endif %}</span></label>
+      <input type="password" name="smtp_password" value="" autocomplete="new-password" placeholder="{{ '••••••••' if c.smtp_password else '' }}"></div>
+    <div class="field" style="flex:2"><label>Absender-Adresse</label>
+      <input name="smtp_from" value="{{ c.smtp_from or c.email }}" placeholder="rechnung@schornstein-beka.de"></div>
+  </div>
+</div>
+
+</form>
+
+<div class="card">
+  <h2>Verwaltung, Export &amp; Protokoll</h2>
+  <p class="help" style="margin-top:0">Buchhaltungs-Export für den Steuerberater und das revisionssichere GoBD-Protokoll.</p>
+  <form class="inline" method="get" style="align-items:flex-end; gap:10px; flex-wrap:wrap">
+    <div class="field"><label>Von (optional)</label><input type="date" name="von"></div>
+    <div class="field"><label>Bis (optional)</label><input type="date" name="bis"></div>
+    <div class="field" style="flex:0"><button class="btn ghost" formaction="{{ url_for('export_datev') }}">⤓ DATEV-Export</button></div>
+    <div class="field" style="flex:0"><button class="btn ghost" formaction="{{ url_for('export_umsatz') }}">⤓ Umsatzliste</button></div>
+  </form>
+  <div class="actions" style="margin-top:12px">
+    <a class="btn ghost" href="{{ url_for('audit_log') }}">🛡 GoBD-Protokoll öffnen</a>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Datensicherung</h2>
+  <div class="actions">
+    <form method="post" action="{{ url_for('settings_backup') }}">
+      <input type="hidden" name="action" value="create">
+      <button class="btn ghost">💾 Sicherung jetzt erstellen</button></form>
+    <form method="post" action="{{ url_for('settings_backup') }}">
+      <input type="hidden" name="action" value="selftest">
+      <button class="btn ghost">🧪 Sicherung prüfen (Selbsttest)</button></form>
+  </div>
+
+  {% if backups %}
+  <div class="table-wrap" style="margin-top:12px"><table>
+    <thead><tr><th>Vorhandene Sicherungen</th><th class="num">Größe</th><th></th></tr></thead>
+    <tbody>
+    {% for b in backups[:10] %}
+      <tr>
+        <td class="nowrap">{{ b.name }}</td>
+        <td class="num">{{ (b.size / 1048576) | round(1) }} MB</td>
+        <td class="num"><form method="post" action="{{ url_for('settings_backup') }}"
+          onsubmit="return confirm('ACHTUNG: Die aktuellen Daten werden durch diese Sicherung ERSETZT. Vorher wird automatisch eine Sicherheitskopie angelegt. Fortfahren?')">
+          <input type="hidden" name="action" value="restore">
+          <input type="hidden" name="name" value="{{ b.name }}">
+          <button class="btn ghost sm">↩ Wiederherstellen</button></form></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <p class="help" style="margin-top:10px">Noch keine lokalen Sicherungen vorhanden.</p>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('settings_backup') }}" enctype="multipart/form-data"
+    style="margin-top:14px"
+    onsubmit="return confirm('ACHTUNG: Die aktuellen Daten werden durch die hochgeladene Sicherung ERSETZT. Fortfahren?')">
+    <input type="hidden" name="action" value="restore">
+    <div class="inline" style="align-items:flex-end; gap:8px">
+      <div class="field"><label>Aus Datei wiederherstellen (z. B. vom USB-Stick)</label>
+        <input type="file" name="backup_zip" accept=".zip" required></div>
+      <div class="field" style="flex:0"><button class="btn ghost">↩ Wiederherstellen</button></div>
+    </div>
+  </form>
+  <p class="help">Nach einer Wiederherstellung das Programm einmal neu starten.</p>
+</div>
+{% endblock %}

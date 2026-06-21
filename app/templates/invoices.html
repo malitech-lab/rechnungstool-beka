@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block heading %}Rechnungen{% endblock %}
+{% block topbar_actions %}
+  <form method="post" action="{{ url_for('offer_new') }}"><button class="btn ghost">+ Angebot</button></form>
+  <form method="post" action="{{ url_for('invoice_new') }}"><button class="btn">+ Neue Rechnung</button></form>
+{% endblock %}
+{% block content %}
+<div class="toolbar" style="justify-content:space-between; flex-wrap:wrap; gap:8px">
+  <div>
+    <a class="btn ghost sm {{ 'active' if not status }}" href="{{ url_for('invoices', q=q) }}">Alle</a>
+    <a class="btn ghost sm {{ 'active' if status=='entwurf' }}" href="{{ url_for('invoices', status='entwurf', q=q) }}">Entwürfe</a>
+    <a class="btn ghost sm {{ 'active' if status=='festgeschrieben' }}" href="{{ url_for('invoices', status='festgeschrieben', q=q) }}">Festgeschrieben</a>
+  </div>
+  <form method="get" class="inline" style="gap:6px">
+    {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+    <input type="search" name="q" value="{{ q }}" placeholder="Nummer, Kunde oder Betreff …" style="min-width:240px">
+    <button class="btn ghost sm">Suchen</button>
+    {% if q %}<a class="btn ghost sm" href="{{ url_for('invoices', status=status) }}" title="Suche zurücksetzen">×</a>{% endif %}
+  </form>
+</div>
+{% if q %}<p class="help">{{ invoices|length }} Treffer für „{{ q }}".</p>{% endif %}
+<div class="card">
+  {% include "_invoice_table.html" %}
+</div>
+{% endblock %}

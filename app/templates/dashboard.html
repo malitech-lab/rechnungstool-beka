@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block heading %}Übersicht{% endblock %}
+{% block topbar_actions %}
+  <form method="post" action="{{ url_for('offer_new') }}"><button class="btn ghost">+ Angebot</button></form>
+  <form method="post" action="{{ url_for('invoice_new') }}"><button class="btn">+ Neue Rechnung</button></form>
+{% endblock %}
+{% block content %}
+
+{% if not company.tax_number and not company.vat_id %}
+<div class="alert warn">
+  <strong>Erste Einrichtung:</strong> Bitte hinterlegen Sie in den
+  <a href="{{ url_for('settings') }}">Einstellungen</a> Ihre Steuernummer/USt-IdNr. und
+  Bankverbindung. Ohne diese Pflichtangaben kann keine Rechnung festgeschrieben werden.
+</div>
+{% endif %}
+
+<div class="grid cols-4">
+  <div class="kpi"><div class="label">Umsatz (netto) {{ year }}</div><div class="value">{{ umsatz | eur }}</div></div>
+  <div class="kpi"><div class="label">Rechnungen {{ year }}</div><div class="value">{{ anzahl }}</div></div>
+  <div class="kpi accent"><div class="label">Offene Posten</div><div class="value">{{ offen_sum | eur }}</div></div>
+  <div class="kpi"><div class="label">Mahnfällig (&gt;14 T.)</div><div class="value">{{ overdue|length }}</div></div>
+</div>
+
+<div class="card">
+  <h2>Offene Posten</h2>
+  {% if offen %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Nummer</th><th>Kunde</th><th>Rechnungsdatum</th><th class="num">Offen</th><th></th></tr></thead>
+    <tbody>
+    {% for i in offen %}
+      <tr>
+        <td><a href="{{ url_for('invoice_edit', iid=i.id) }}">{{ i.invoice_number }}</a></td>
+        <td>{{ i.buyer_name }}</td>
+        <td class="nowrap">{{ i.invoice_date | de }}
+          {% if i.mahn_faellig %}<span class="badge red">mahnfällig</span>{% endif %}</td>
+        <td class="num">{{ i.open | eur }}</td>
+        <td class="num nowrap">
+          <form method="post" action="{{ url_for('invoice_dunning', iid=i.id) }}" style="display:inline"
+            onsubmit="return confirm('Mahnung für {{ i.invoice_number }} erstellen?')">
+            <button class="btn {{ 'danger' if i.mahn_faellig else 'ghost' }} sm">Mahnung</button></form>
+          <a class="btn ghost sm" href="{{ url_for('invoice_edit', iid=i.id) }}">öffnen</a>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<div class="empty">Keine offenen Posten. 🎉</div>{% endif %}
+</div>
+
+<div class="card">
+  <h2>Zuletzt bearbeitet</h2>
+  {% include "_invoice_table.html" %}
+</div>
+{% endblock %}

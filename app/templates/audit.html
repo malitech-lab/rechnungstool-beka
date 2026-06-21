@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block heading %}GoBD-Protokoll (Audit-Log){% endblock %}
+{% block topbar_actions %}
+  <a class="btn ghost" href="{{ url_for('audit_verify') }}">🔐 Protokoll prüfen</a>
+  <a class="btn ghost" href="{{ url_for('settings') }}">← Einstellungen</a>
+{% endblock %}
+{% block content %}
+<div class="alert info">Revisionssicheres Protokoll aller Vorgänge (Erstellung, Änderung, Festschreibung,
+  Versand, Zahlungen). Jeder Eintrag ist per SHA-256-Kette mit dem vorherigen verknüpft –
+  „Protokoll prüfen" weist die Unverändertheit nach. Die letzten 500 Einträge.</div>
+<div class="card">
+  <div class="table-wrap"><table>
+    <thead><tr><th>Zeitpunkt</th><th>Benutzer</th><th>Aktion</th><th>Objekt</th><th>Detail</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr><td class="nowrap">{{ r.ts }}</td><td>{{ r.user }}</td><td>{{ r.action }}</td>
+        <td class="muted">{{ r.entity }} {{ r.entity_id }}</td><td class="muted">{{ r.detail }}</td></tr>
+    {% else %}
+      <tr><td colspan="5" class="muted">Noch keine Einträge.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}
