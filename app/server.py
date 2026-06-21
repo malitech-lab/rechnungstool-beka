@@ -173,7 +173,10 @@ def create_app() -> Flask:
         if ajax:
             return ("", 204)
         if request.form.get("_action") == "festschreiben":
-            return redirect(url_for("invoice_finalize", iid=iid))
+            # festschreiben ist POST-only (GoBD-Zustandsänderung, keine GET-CSRF-
+            # Flanke). 307 erhält die POST-Methode beim Weiterleiten; ein normaler
+            # 302 würde der Browser per GET nachladen und liefe in einen 405.
+            return redirect(url_for("invoice_finalize", iid=iid), code=307)
         return redirect(url_for("invoice_edit", iid=iid))
 
     @app.route("/rechnungen/<int:iid>/festschreiben", methods=["POST"])
