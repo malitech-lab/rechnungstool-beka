@@ -27,7 +27,8 @@ hiddenimports = collect_submodules("drafthorse")
 hiddenimports += ["lxml._elementpath", "lxml.etree", "segno", "PIL", "PIL.Image",
                   "PIL.ImageDraw", "pypdfium2", "pypdfium2_raw",
                   # App-Fenster/Tray + Backup-Modul (lazy importiert in run.py)
-                  "pystray", "pystray._win32", "app.backup", "certifi"]
+                  "pystray", "pystray._win32", "app.backup", "certifi",
+                  "truststore"]
 
 a = Analysis(
     ["run.py"],

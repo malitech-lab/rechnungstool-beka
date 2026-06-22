@@ -18,6 +18,12 @@ build/
 dist/
 *.spec.bak
 
+# Signatur-/Geheimschlüssel – NIEMALS einchecken!
+*.pfx
+*.p12
+*.key
+secret.key
+
 # OS / Editor
 .DS_Store
 Thumbs.db

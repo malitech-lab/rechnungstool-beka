@@ -14,9 +14,10 @@ pystray==0.19.5
 # pystray: Tray-Icon zum sauberen Beenden, wenn die EXE ohne Konsolenfenster
 # (console=False) läuft. Nutzt Pillow (bereits vorhanden). Nur Windows-relevant.
 certifi==2026.6.17
-# certifi: verlässliches CA-Wurzelzertifikat-Bundle für den TLS-E-Mail-Versand
-# (SMTP). Ohne es: CERTIFICATE_VERIFY_FAILED, weil weder macOS noch die gepackte
-# EXE einen garantierten System-Zertifikatsspeicher haben.
+truststore==0.10.4
+# TLS-Vertrauensspeicher für den E-Mail-Versand (SMTP), gegen CERTIFICATE_VERIFY_FAILED:
+# truststore nutzt den Betriebssystem-Speicher (Windows findet so auch fehlende
+# Zwischenzertifikate) und ist die robusteste Variante; certifi ist der Fallback.
 # Hinweis: Das Logo liegt fertig als PNG/SVG bei (app/static/img/). cairosvg wird
 # NUR zum Neu-Erzeugen des Logos benötigt und ist KEINE Laufzeit-Abhängigkeit.
 # Werkzeug/Jinja2 werden von Flask mitinstalliert.

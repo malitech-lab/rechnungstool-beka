@@ -16,9 +16,20 @@ class MailError(Exception):
 
 
 def _ssl_context() -> ssl.SSLContext:
-    """TLS-Kontext mit einem zuverlässigen CA-Bundle (certifi). Wichtig, weil weder
-    macOS noch die gepackte Windows-EXE einen verlässlichen System-Zertifikatsspeicher
-    garantieren – sonst: CERTIFICATE_VERIFY_FAILED."""
+    """TLS-Kontext für den Mailversand – möglichst robust gegen
+    CERTIFICATE_VERIFY_FAILED über alle Umgebungen (Windows-EXE, macOS, Linux).
+
+    1) Betriebssystem-Zertifikatsspeicher via truststore: unter Windows der
+       umfassendste Speicher (findet auch fehlende Zwischenzertifikate/AIA, immer
+       aktuell) – das löst die meisten Mailserver-Zertifikatsprobleme.
+    2) sonst das certifi-Wurzelbundle.
+    3) sonst der Python-Standardkontext.
+    """
+    try:
+        import truststore
+        return truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    except Exception:
+        pass
     try:
         import certifi
         return ssl.create_default_context(cafile=certifi.where())
