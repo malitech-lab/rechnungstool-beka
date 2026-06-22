@@ -32,7 +32,10 @@ def is_configured(company: dict) -> bool:
 
 
 def smtp_from(company: dict) -> str:
-    return (company.get("smtp_from") or company.get("email") or "").strip()
+    # Absender: explizit gesetzt, sonst der Login (= authentifiziertes Postfach;
+    # vermeidet DMARC-Ablehnung), erst zuletzt die Firmen-E-Mail.
+    return (company.get("smtp_from") or company.get("smtp_user")
+            or company.get("email") or "").strip()
 
 
 def build_message(company: dict, to: str, subject: str, body: str,

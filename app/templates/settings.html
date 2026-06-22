@@ -78,8 +78,11 @@
     <div class="field"><label>Passwort {% if c.smtp_password %}<span class="help">(gesetzt – leer lassen = unverändert){% endif %}</span></label>
       <input type="password" name="smtp_password" value="" autocomplete="new-password" placeholder="{{ '••••••••' if c.smtp_password else '' }}"></div>
     <div class="field" style="flex:2"><label>Absender-Adresse</label>
-      <input name="smtp_from" value="{{ c.smtp_from or c.email }}" placeholder="rechnung@schornstein-beka.de"></div>
+      <input name="smtp_from" value="{{ c.smtp_from or c.smtp_user }}" placeholder="postfach@strato-domain.de"></div>
   </div>
+  <div class="help">Die Absender-Adresse muss zu Ihrem Postfach/Login passen – sonst lehnt der
+    Anbieter die Mail ab (DMARC). Bei Strato z. B. Ihre eigene Strato-Adresse, nicht eine
+    fremde Domain. Leer lassen = der Login wird als Absender verwendet.</div>
 </div>
 
 </form>
